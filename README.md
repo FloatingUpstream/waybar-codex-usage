@@ -60,6 +60,7 @@ Add the module to your Waybar config (typically `~/.config/waybar/config.jsonc`)
 
 ## Notes
 
+- No formal releases are planned; build from `master`.
 - Config is read from `~/.codex/config.toml` (or `CODEX_HOME`).
 - `chatgpt_base_url` defaults to `https://chatgpt.com/backend-api` when not set.
 - `cli_auth_credentials_store` supports `auto`, `file`, or `keyring`.
