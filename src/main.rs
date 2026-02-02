@@ -217,16 +217,13 @@ enum PathStyle {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    let output = match run(args).await {
-        Ok(output) => output,
-        Err(err) => WaybarOutput {
-            text: "Codex error".to_string(),
-            tooltip: Some(err.to_string()),
-            class: Some("error".to_string()),
-            alt: None,
-            percentage: None,
-        },
-    };
+    let output = run(args).await.unwrap_or_else(|err| WaybarOutput {
+        text: "Codex error".to_string(),
+        tooltip: Some(err.to_string()),
+        class: Some("error".to_string()),
+        alt: None,
+        percentage: None,
+    });
     let payload = serde_json::to_string(&output).unwrap_or_else(|_| "{}".to_string());
     println!("{payload}");
 }

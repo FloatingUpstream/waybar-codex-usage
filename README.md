@@ -1,34 +1,28 @@
 # waybar-codex-usage
 
-Waybar module that shows Codex ChatGPT usage limits using the same credentials as the Codex CLI.
+Minimal [Waybar](https://github.com/Alexays/Waybar) custom module that shows Codex ChatGPT usage limits using the same credentials as the Codex CLI. 
 
 ## Requirements
 
-- Run `codex login` with ChatGPT auth (API key auth does not expose usage limits).
+- Run `codex login` with ChatGPT authentication once.
 - `auth.json` stored in `~/.codex` or keyring (based on Codex config).
 
-## Build
+## Build and Installation
 
 ```bash
 cargo build --release
 ```
-
-Binary:
-
-```
-target/release/waybar-codex-usage
-```
+Put `target/release/waybar-codex-usage` on your PATH (or use the absolute path in your Waybar config).
 
 ## Usage
 
 ```bash
-./target/release/waybar-codex-usage
-./target/release/waybar-codex-usage --compact
-./target/release/waybar-codex-usage --format "C {pct}% ({win})"
-./target/release/waybar-codex-usage --use-weekly
+waybar-codex-usage --compact
+waybar-codex-usage --format "C {pct}% ({win})"
+waybar-codex-usage --use-weekly
 ```
 
-Output is Waybar JSON with `text`, `tooltip`, `class`, and `percentage`.
+Output is Waybar compatible JSON with `text`, `tooltip`, `class`, and `percentage`.
 
 ### Formatting tokens
 
@@ -50,11 +44,13 @@ Output is Waybar JSON with `text`, `tooltip`, `class`, and `percentage`.
 - `--no-credits` hide credits line in tooltip
 - `--cache-ttl` cache lifetime in seconds (default 60, set 0 to disable)
 
-## Waybar config snippet
+## Waybar configuration
+
+Add the module to your Waybar config (typically `~/.config/waybar/config.jsonc`).
 
 ```json
 "custom/codex-usage": {
-  "exec": "${HOME}/bin/waybar-codex-usage/waybar-codex-usage",
+  "exec": "/path/to/waybar-codex-usage",
   "interval": 60,
   "return-type": "json",
   "format": "{}",
