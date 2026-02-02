@@ -1,10 +1,10 @@
 use anyhow::Result;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use chrono::Utc;
 use clap::Parser;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT};
 use reqwest::StatusCode;
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use sha2::Sha256;
@@ -273,22 +273,21 @@ async fn run(args: Args) -> Result<WaybarOutput> {
     } else {
         match fetch_rate_limits(&config, &mut auth_data).await {
             Ok(snapshot) => {
-                if cache_enabled {
-                    if let Some(path) = cache_path.as_deref() {
-                        write_cache(
-                            path,
-                            &CacheEntry {
-                                saved_at: now_ts,
-                                snapshot: snapshot.clone(),
-                            },
-                        );
-                    }
+                if cache_enabled && let Some(path) = cache_path.as_deref() {
+                    write_cache(
+                        path,
+                        &CacheEntry {
+                            saved_at: now_ts,
+                            snapshot: snapshot.clone(),
+                        },
+                    );
                 }
                 (snapshot, DataSource::Live)
             }
             Err(fetch_err) => {
                 if let Some(entry) = cached {
-                    let mut output = build_output(&args, entry.snapshot.clone(), DataSource::CacheStale);
+                    let mut output =
+                        build_output(&args, entry.snapshot.clone(), DataSource::CacheStale);
                     if let Some(tooltip) = output.tooltip.as_mut() {
                         tooltip.push_str("\nCached (fetch failed)");
                     }
@@ -334,12 +333,11 @@ fn load_config_file(path: &Path) -> ConfigFile {
 fn find_codex_home() -> Result<PathBuf> {
     if let Ok(value) = std::env::var("CODEX_HOME") {
         if value.is_empty() {
-            return Ok(default_codex_home()?);
+            return default_codex_home();
         }
         let path = PathBuf::from(value);
-        let metadata = fs::metadata(&path).map_err(|err| {
-            anyhow::anyhow!("CODEX_HOME points to missing path: {err}")
-        })?;
+        let metadata = fs::metadata(&path)
+            .map_err(|err| anyhow::anyhow!("CODEX_HOME points to missing path: {err}"))?;
         if !metadata.is_dir() {
             return Err(anyhow::anyhow!("CODEX_HOME is not a directory"));
         }
@@ -417,11 +415,11 @@ async fn fetch_rate_limits(config: &AppConfig, auth_data: &mut AuthData) -> Resu
         return Err(anyhow::anyhow!("Access token is empty"));
     }
 
-    if tokens.account_id.is_none() {
-        if let Some(account_id) = account_id_from_id_token(&tokens.id_token) {
-            tokens.account_id = Some(account_id);
-            auth_data.modified = true;
-        }
+    if tokens.account_id.is_none()
+        && let Some(account_id) = account_id_from_id_token(&tokens.id_token)
+    {
+        tokens.account_id = Some(account_id);
+        auth_data.modified = true;
     }
 
     let (mut status, mut body) = request_usage(config, tokens).await?;
@@ -458,16 +456,13 @@ async fn request_usage(config: &AppConfig, tokens: &TokenData) -> Result<(Status
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
-    headers.insert(
-        USER_AGENT,
-        HeaderValue::from_static("waybar-codex-usage"),
-    );
+    headers.insert(USER_AGENT, HeaderValue::from_static("waybar-codex-usage"));
     let auth_header = format!("Bearer {}", tokens.access_token);
     headers.insert(AUTHORIZATION, HeaderValue::from_str(&auth_header)?);
-    if let Some(account_id) = tokens.account_id.as_deref() {
-        if let Ok(value) = HeaderValue::from_str(account_id) {
-            headers.insert("ChatGPT-Account-Id", value);
-        }
+    if let Some(account_id) = tokens.account_id.as_deref()
+        && let Ok(value) = HeaderValue::from_str(account_id)
+    {
+        headers.insert("ChatGPT-Account-Id", value);
     }
 
     let res = client.get(&url).headers(headers).send().await?;
@@ -517,9 +512,7 @@ async fn refresh_tokens(auth_data: &mut AuthData) -> Result<()> {
     let status = response.status();
     if !status.is_success() {
         let body = response.text().await.unwrap_or_default();
-        return Err(anyhow::anyhow!(
-            "Token refresh failed: {status}: {body}"
-        ));
+        return Err(anyhow::anyhow!("Token refresh failed: {status}: {body}"));
     }
 
     let refresh: RefreshResponse = response.json().await?;
@@ -572,9 +565,13 @@ fn snapshot_from_payload(payload: RateLimitStatusPayload) -> SnapshotData {
 
 fn window_from_snapshot(window: &RateLimitWindowSnapshot) -> WindowData {
     let used_percent = window.used_percent.unwrap_or(0) as f64;
-    let window_minutes = window
-        .limit_window_seconds
-        .and_then(|seconds| if seconds > 0 { Some((i64::from(seconds) + 59) / 60) } else { None });
+    let window_minutes = window.limit_window_seconds.and_then(|seconds| {
+        if seconds > 0 {
+            Some((i64::from(seconds) + 59) / 60)
+        } else {
+            None
+        }
+    });
     let resets_at = window.reset_at.map(i64::from);
 
     WindowData {
@@ -837,7 +834,11 @@ fn format_credits(credits: Option<&CreditsData>) -> String {
 
 fn cache_file_path() -> Option<PathBuf> {
     if let Ok(base) = std::env::var("XDG_CACHE_HOME") {
-        return Some(PathBuf::from(base).join("waybar-codex-usage").join("cache.json"));
+        return Some(
+            PathBuf::from(base)
+                .join("waybar-codex-usage")
+                .join("cache.json"),
+        );
     }
     if let Ok(home) = std::env::var("HOME") {
         return Some(
